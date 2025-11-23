@@ -20,24 +20,26 @@
 use strict;
 use MIME::Lite;
 use lib "/usr/local/lib/perl";
-use cpi_cgi;
-use cpi_db;
-use cpi_escape;
-use cpi_file;
-use cpi_setup;
-use cpi_translate;
-use cpi_user;
-use cpi_vars;
+use cpi_cgi qw(show_vars);
+use cpi_setup qw(setup);
+use cpi_escape qw(javascript_esc);
+use cpi_user qw(admin_page logout_select);
+use cpi_db qw(dbadd dbdel dbget dbpop dbput dbread dbwrite
+ DBread DBwrite DBpop DBget DBput DBdelkey DBadd DBdel DBnewkey);
+use cpi_file qw(cleanup fatal read_file);
+use cpi_translate qw(xprint);
+
 
 #$cpi_vars::TABLE_TAGS	= "bgcolor=\"#c0c0d0\"";
 $cpi_vars::TABLE_TAGS	= "USECSS";
 
 our $FORMNAME		= "form";
 
-&cpi_setup::setup(
+&setup(
 	allow_account_creation=>1,
 	require_valid_email=>1,
 	require_valid_address=>1,
+	preset_language=>"en",
 	Qrequire_captcha=>1
 	);
 
@@ -99,11 +101,11 @@ EOF
 	    ( ($butdest eq $mode) ? " style='background-color:cyan'" : "" ) .
 	    " value=\"$buttext\"\n";
 	}
-    $s .= ">" . &cpi_user::logout_select("footerform") . <<EOF;
+    $s .= ">" . &logout_select("footerform") . <<EOF;
 	</th></tr>
 	</table></th></tr></table></center></form>
 EOF
-    &cpi_translate::xprint( $s );
+    &xprint( $s );
     }
 
 #########################################################################
@@ -120,7 +122,7 @@ sub check_if_app_needs_header()
 sub directory_screen
     {
     my $s = $form_top;
-    my @lists = &cpi_db::dbget( $cpi_vars::DB, "lists" );
+    my @lists = &DBget( "lists" );
     $s .= <<EOF;
 $cpi_vars::HELP_IFRAME
 <input type=hidden name=listind value="">
@@ -130,11 +132,11 @@ EOF
     foreach my $listind ( @lists )
         {
 	$s .= "<tr><th><input type=button onClick='todo_func(\"show\",\"$listind\");'></th><td>"
-	    . &cpi_db::dbget($cpi_vars::DB,"list",$listind,"name")
+	    . &DBget("list",$listind,"name")
 	    . "</td><td>"
-	    . &cpi_db::dbget($cpi_vars::DB,"list",$listind,"modified")
+	    . &DBget("list",$listind,"modified")
 	    . " XL(by) "
-	    . &cpi_db::dbget($cpi_vars::DB,"list",$listind,"modifier")
+	    . &DBget("list",$listind,"modifier")
 	    . "</td></tr>";
 	}
     $s .= <<EOF;
@@ -142,7 +144,7 @@ EOF
 </table></center></form>
 EOF
     $s =~ s+%%JSCRIPT%%++gs;
-    &cpi_translate::xprint( $s );
+    &xprint( $s );
     &footer("directory");
     }
 
@@ -155,14 +157,14 @@ sub generate_email
 
     my $s = $form_top;
 
-    &cpi_db::dbread( $cpi_vars::DB ) if( $dest );
+    &DBread() if( $dest );
 
     my @table_entries = ();
-    my @lists = &cpi_db::dbget( $cpi_vars::DB, "lists" );
+    my @lists = &DBget( "lists" );
     foreach my $listind ( @lists )
         {
 	my @items = ();
-        my $list = ( &cpi_db::dbget( $cpi_vars::DB, "list", $listind, "data" ) || "" );
+        my $list = ( &DBget( "list", $listind, "data" ) || "" );
 	foreach my $itempiece ( split(/type:/,$list) )
 	    {
 	    if( $itempiece =~ /"(.*)".*quantity:(\d+)/s )
@@ -173,11 +175,11 @@ sub generate_email
 	next if( ! @items );
 	push( @table_entries,
 	    "<td colspan=2>&nbsp;<p><b>"
-		. &cpi_db::dbget($cpi_vars::DB,"list",$listind,"name")
+		. &DBget("list",$listind,"name")
 		. "</b> XL(modified) "
-		. &cpi_db::dbget($cpi_vars::DB,"list",$listind,"modified")
+		. &DBget("list",$listind,"modified")
 		. " XL(by) "
-		. &cpi_db::dbget($cpi_vars::DB,"list",$listind,"modifier")
+		. &DBget("list",$listind,"modifier")
 		. "</th>",
 	    "<th align=right>Quantity</th><th align=left>Items</th>",
 	    @items);
@@ -197,7 +199,7 @@ EOF
     . "<a href=$cpi_vars::URL>Application</a></center>\n";
     if( ! $dest )
 	{
-	&cpi_translate::xprint( $s );
+	&xprint( $s );
 	&footer("directory");
 	}
     else
@@ -230,7 +232,7 @@ EOF
 	    close( OUT );
 	    }
 	}
-    &cpi_file::cleanup(0);
+    &cleanup(0);
     }
 
 #########################################################################
@@ -252,14 +254,14 @@ sub show_list
     {
     my $s = $form_top;
     $_=$cpi_vars::BASEDIR; # Eliminate message about variable used only once
-    my $jscript=&cpi_file::read_file("$cpi_vars::BASEDIR/lib/$cpi_vars::PROG.js");
+    my $jscript=&read_file("$cpi_vars::BASEDIR/lib/$cpi_vars::PROG.js");
 
-    my $sortorder = ( &cpi_db::dbget( $cpi_vars::DB, "sortorder", $cpi_vars::FORM{listind}, "data" ) || "" );
-    my $list = ( &cpi_db::dbget( $cpi_vars::DB, "list", $cpi_vars::FORM{listind}, "data" ) || "" );
-    my $listname = ( &cpi_db::dbget( $cpi_vars::DB, "list", $cpi_vars::FORM{listind}, "name" ) || "" );
+    my $sortorder = ( &DBget( "sortorder", $cpi_vars::FORM{listind}, "data" ) || "" );
+    my $list = ( &DBget( "list", $cpi_vars::FORM{listind}, "data" ) || "" );
+    my $listname = ( &DBget( "list", $cpi_vars::FORM{listind}, "name" ) || "" );
 
-    $list = &cpi_escape::javascript_esc( $list, '"', "&quot;" );
-    $sortorder = &cpi_escape::javascript_esc( $sortorder, '"', "&quot;" );
+    $list = &javascript_esc( $list, '"', "&quot;" );
+    $sortorder = &javascript_esc( $sortorder, '"', "&quot;" );
 
     $s .= <<EOF;
 $cpi_vars::HELP_IFRAME
@@ -277,7 +279,7 @@ EOF
     $s =~ s+%%FORMNAME%%+$FORMNAME+gs;
     $s =~ s+%%WEB%%+$cpi_vars::PROG+gs;
 
-    &cpi_translate::xprint( $s );
+    &xprint( $s );
     &footer("list");
     }
 
@@ -297,32 +299,32 @@ sub update_list
 
     if( @probs )
         {
-        &cpi_translate::xprint( join("<br>",@probs) );
-        &cpi_file::cleanup();
+        &xprint( join("<br>",@probs) );
+        &cleanup();
         return;
         }
 
-    &cpi_db::dbwrite( $cpi_vars::DB );
+    &DBwrite();
     if( $cpi_vars::FORM{list} )
 	{
-	&cpi_db::dbput( $cpi_vars::DB, "sortorder", $cpi_vars::FORM{listind},
+	&DBput( "sortorder", $cpi_vars::FORM{listind},
 	    "data", $cpi_vars::FORM{sortorder} );
-	&cpi_db::dbput( $cpi_vars::DB, "list", $cpi_vars::FORM{listind},
+	&DBput( "list", $cpi_vars::FORM{listind},
 	    "data", $cpi_vars::FORM{list} );
-	&cpi_db::dbput( $cpi_vars::DB, "list", $cpi_vars::FORM{listind},
+	&DBput( "list", $cpi_vars::FORM{listind},
 	    "name", $cpi_vars::FORM{listname} );
-	&cpi_db::dbput( $cpi_vars::DB, "list", $cpi_vars::FORM{listind},
+	&DBput( "list", $cpi_vars::FORM{listind},
 	    "modifier", $cpi_vars::USER );
-	&cpi_db::dbput( $cpi_vars::DB, "list", $cpi_vars::FORM{listind},
+	&DBput( "list", $cpi_vars::FORM{listind},
 	    "modified", $datetime );
-	&cpi_db::dbadd( $cpi_vars::DB, "lists", $cpi_vars::FORM{listind} );
+	&DBadd( "lists", $cpi_vars::FORM{listind} );
 	}
     else
         {
-	&cpi_db::dbdel( $cpi_vars::DB, "lists", $cpi_vars::FORM{listind} );
+	&DBdel( "lists", $cpi_vars::FORM{listind} );
 	$cpi_vars::FORM{listind} = "";
 	}
-    &cpi_db::dbpop( $cpi_vars::DB );
+    &DBpop();
     }
 
 
@@ -332,9 +334,9 @@ sub update_list
 sub user_logic
     {
     my $fnc = ( $cpi_vars::FORM{func} || "" );
-    if( $fnc eq "admin"		) { &cpi_user::admin_page();		}
+    if( $fnc eq "admin"		) { &admin_page();		}
     elsif( $fnc ne "" && $fnc ne "email" && $fnc ne "dirmode" && $fnc ne "dologin" && $fnc ne "show" )
-        { &cpi_file::fatal("Unrecognized function \"$fnc\"."); }
+        { &fatal("Unrecognized function \"$fnc\"."); }
     if( $fnc eq "show" )
         {
 	if( $cpi_vars::FORM{arg} )
@@ -369,7 +371,7 @@ if( ($ENV{SCRIPT_NAME}||"") eq "" )
     elsif( $fnc =~ /email=(.*)/ )	{ generate_email($1);	}
     else
 	{
-	&cpi_file::fatal("XL(Usage):  $cpi_vars::PROG.cgi (dump|dumpaccounts|dumptranslations|undump|undumpaccounts|undumptranslations) [ dumpname ]",0)
+	&fatal("XL(Usage):  $cpi_vars::PROG.cgi (dump|dumpaccounts|dumptranslations|undump|undumpaccounts|undumptranslations) [ dumpname ]",0)
 	}
     }
 
@@ -395,7 +397,7 @@ print STDERR "Using_agent=[$using_agent], Agent=[$agent]\n";
 #my($nam,$pass,$uid,$gid,$quota,$comment,$gcos,$dir,$shell)
 #    = getpwnam("$cpi_vars::USER");
 
-#&cpi_cgi::show_vars()
+#&show_vars()
 #    if( ! &inlist(($cpi_vars::FORM{func}||""),"download","view") );
 
 $form_top = <<EOF;
@@ -424,4 +426,4 @@ EOF
 
 &user_logic();
 
-&cpi_file::cleanup(0);
+&cleanup(0);
