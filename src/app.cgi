@@ -92,8 +92,7 @@ EOF
     <tr><th><table $cpi_vars::TABLE_TAGS><tr><th
 EOF
     foreach my $button (
-	"dirmode:XL(Directory)",
-	"admin:XL(Account administration)" )
+	"dirmode:XL(Directory)" )
         {
 	my( $butdest, $buttext ) = split(/:/,$button);
 	$s .= "><input type=button help='button_$butdest'"
