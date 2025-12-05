@@ -39,7 +39,7 @@ our $FORMNAME		= "form";
 	allow_account_creation=>1,
 	require_valid_email=>1,
 	require_valid_address=>1,
-	preset_language=>"en",
+	Qpreset_language=>"en",
 	Qrequire_captcha=>1
 	);
 
