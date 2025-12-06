@@ -23,7 +23,7 @@ use lib "/usr/local/lib/perl";
 use cpi_cgi qw(show_vars);
 use cpi_setup qw(setup);
 use cpi_escape qw(javascript_esc);
-use cpi_user qw(admin_page logout_select);
+use cpi_user qw(logout_select);
 use cpi_db qw(dbadd dbdel dbget dbpop dbput dbread dbwrite
  DBread DBwrite DBpop DBget DBput DBdelkey DBadd DBdel DBnewkey);
 use cpi_file qw(cleanup fatal read_file);
@@ -333,8 +333,7 @@ sub update_list
 sub user_logic
     {
     my $fnc = ( $cpi_vars::FORM{func} || "" );
-    if( $fnc eq "admin"		) { &admin_page();		}
-    elsif( $fnc ne "" && $fnc ne "email" && $fnc ne "dirmode" && $fnc ne "dologin" && $fnc ne "show" )
+    if( $fnc ne "" && $fnc ne "email" && $fnc ne "dirmode" && $fnc ne "dologin" && $fnc ne "show" )
         { &fatal("Unrecognized function \"$fnc\"."); }
     if( $fnc eq "show" )
         {
