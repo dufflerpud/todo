@@ -202,7 +202,7 @@ sub generate_email
 	{
 	$cpi_vars::PROG = $0;
 	$cpi_vars::PROG=~ s+^.*/++;
-	$cpi_vars::PROG = "Groceries.cgi" if( $cpi_vars::PROG eq "app.cgi" );
+	$cpi_vars::PROG = "todo.cgi" if( $cpi_vars::PROG eq "app.cgi" );
 	$cpi_vars::URL = "http://www.brightsands.com/~chris/$cpi_vars::PROG";
 	}
 
