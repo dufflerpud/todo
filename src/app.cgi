@@ -198,13 +198,6 @@ sub generate_email
 	    "<th align=right>Quantity</th><th align=left>Items</th>",
 	    @items);
 	}
-    if( ! $cpi_vars::URL )
-	{
-	$cpi_vars::PROG = $0;
-	$cpi_vars::PROG=~ s+^.*/++;
-	$cpi_vars::PROG = "todo.cgi" if( $cpi_vars::PROG eq "app.cgi" );
-	$cpi_vars::URL = "http://www.brightsands.com/~chris/$cpi_vars::PROG";
-	}
 
     $s .= <<EOF
 <center><table border=1><tr>
